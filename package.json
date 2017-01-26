@@ -1,0 +1,39 @@
+{
+  "name": "auth-basic-jwt",
+  "version": "1.0.0",
+  "description": "Basic auth + jwt module for express",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxx-t/auth-basic-jwt.git"
+  },
+  "keywords": [
+    "basicauth",
+    "jwt",
+    "express",
+    "expressjs"
+  ],
+  "author": "maxxt",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/maxx-t/auth-basic-jwt/issues"
+  },
+  "homepage": "https://github.com/maxx-t/auth-basic-jwt#readme",
+  "dependencies": {
+    "basic-auth": "^1.1.0",
+    "cookie-parser": "^1.4.3",
+    "jsonwebtoken": "^7.2.1",
+    "parseurl": "latest"
+  },
+  "devDependencies": {
+    "mocha": "^3.2.0",
+    "supertest": "^2.0.1",
+    "express": "latest"
+  },
+  "engines": {
+    "node": ">= 7.0.0"
+  }
+}
