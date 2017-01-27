@@ -5,8 +5,8 @@
 "use strict";
 
 const basicAuth = require('basic-auth');
+const tokenAuth = require('./bearer-auth');
 const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser')();
 const parseUrl = require('parseurl');
 
 function unauthorized(res, message = 'Unauthorized') {
@@ -19,15 +19,16 @@ function logout(req, res, next) {
 
     let url = parseUrl(req);
 
+    //noinspection JSUnresolvedVariable
     if (url.pathname !== '/logout') {
         return next();
     } else {
-        res.clearCookie('token');
         req.authenticated = false;
         return res.send({message: 'goodbye'});
     }
 }
 
+//noinspection JSUnusedLocalSymbols
 function anyLevel(req, res, next) {
     if (!req.authenticated) {
         req.authenticated = false;
@@ -49,12 +50,37 @@ function adminLevel(req, res, next) {
 /**
  * @param secret
  * @param userInterface
- * @return {{any: anyLevel, user: userLevel, admin: adminLevel, core: [*,*,*,*,*]}}
+ * @return {{any: anyLevel, user: userLevel, admin: adminLevel, core: [logout, authBasic, login, authJWT, anyLevel]}}
  */
 module.exports = (secret, userInterface) => {
     if (!secret) throw new Error("No secret set");
     if (!userInterface) throw new Error("No userInterface set");
 
+    /**
+     * Return jwt token if matches /login (POST)
+     */
+    function login(req, res, next) {
+
+        let url = parseUrl(req);
+
+        //noinspection JSUnresolvedVariable
+        if (url.pathname == '/login' && req.method == 'POST') {
+            if (req.authenticated) {
+                jwt.sign({user: req.user}, secret, {}, (err, token) => {
+                    if (err) throw err;
+                    return res.json({
+                        user: req.user,
+                        token: token
+                    })
+                })
+            }
+            else return unauthorized(res, 'Bad user or Password');
+        }
+        else return next();
+
+    }
+
+    //noinspection JSUnusedLocalSymbols
     function authBasic(req, res, next) {
 
         //if previous auth succeed
@@ -64,36 +90,29 @@ module.exports = (secret, userInterface) => {
 
         //if basicAuth attempted
         if (basic && basic.name && basic.pass) {
-
             let user = userInterface.get(basic.name);
             if (user && basic.pass === user.pass) {
                 req.authenticated = true;
                 delete user.pass; //hiding user pass in response
                 req.user = user;
-                jwt.sign({user: user}, secret, {}, (err, token) => {
-                    if (err) throw err;
-                    res.cookie('token', token, {
-                        maxAge: 3600000, // 1h
-                        httpOnly: true
-                    });
-                    next();
-                })
             } else {
                 req.authenticated = false;
-                res.clearCookie('token');
-                return next();
             }
         }
-        else return next();
+
+        return next();
     }
 
+    //noinspection JSUnusedLocalSymbols
     function authJWT(req, res, next) {
         //if previous auth succeed
         if (req.authenticated) return next();
 
+        let token = tokenAuth(req);
+
         //else if JWT auth attempted
-        if (req.cookies.token) {
-            jwt.verify(req.cookies.token, secret, function (err, decoded) {
+        if (token) {
+            jwt.verify(token, secret, function (err, decoded) {
                 if (err) throw err;
                 else {
                     req.authenticated = true;
@@ -109,6 +128,6 @@ module.exports = (secret, userInterface) => {
         any: anyLevel,
         user: userLevel,
         admin: adminLevel,
-        core: [cookieParser, logout, authBasic, authJWT, anyLevel]
+        core: [logout, authBasic, login, authJWT, anyLevel]
     };
 };
