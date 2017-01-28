@@ -33,6 +33,6 @@
     "express": "latest"
   },
   "engines": {
-    "node": ">= 7.0.0"
+    "node": ">= 6.0.0"
   }
 }
