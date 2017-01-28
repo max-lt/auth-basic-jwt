@@ -4,7 +4,8 @@
   "description": "Basic auth + jwt module for express",
   "main": "index.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "test-cov": "istanbul cover node_modules/mocha/bin/_mocha --  --reporter dot --check-leaks test/ && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
   "repository": {
     "type": "git",
@@ -28,9 +29,11 @@
     "parseurl": "latest"
   },
   "devDependencies": {
+    "coveralls": "^2.11.15",
+    "express": "latest",
+    "istanbul": "^0.4.5",
     "mocha": "^3.2.0",
-    "supertest": "^2.0.1",
-    "express": "latest"
+    "supertest": "^2.0.1"
   },
   "engines": {
     "node": ">= 6.0.0"
