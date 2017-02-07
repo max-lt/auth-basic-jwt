@@ -1,15 +1,29 @@
 const assert = require('assert');
+const userGetter = (userName) => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve(userName == 'admin' ? {
+                    name: 'admin',
+                    pass: 'pass',
+                    admin: true
+                } : {
+                    name: userName,
+                    pass: 'pass'
+                })
+        }, 40)
+    })
+};
+
+const getTokenAsync = () => {
+    return new Promise(resolve => {
+        setTimeout(() => resolve('SECRET'), 1000)
+    })
+};
+
 const auth = require('..')(
-    'SECRET',
-    (userName) => (userName == 'admin' ? {
-            name: 'admin',
-            pass: 'pass',
-            admin: true
-        } : {
-            name: userName,
-            pass: 'pass'
-        }),
-    {token: {exp: Math.floor(Date.now() / 1000) + (60 * 60)}}
+    getTokenAsync(),
+    userGetter,
+    {token: {exp: (user) => Math.floor(Date.now() / 1000) + (60 * 60)}}
 );
 
 const request = require('supertest');
@@ -63,50 +77,6 @@ app.use((error, req, res, next) => {
             code: 500
         }
     })
-});
-
-describe('when no token are sent', function () {
-    it('should be ok if not protected', function (done) {
-        request(app)
-            .get('/')
-            .expect(200, DEFAULT_RESPONSE, done)
-    });
-
-    it('should be ok on /login (get)', function (done) {
-        request(app)
-            .get('/login')
-            .expect(200, DEFAULT_RESPONSE, done)
-    });
-
-    it('should fail (401) on /login (post)', function (done) {
-        request(app)
-            .post('/login')
-            .expect(401, LOGIN_FAILED_RESPONSE, done)
-    });
-
-    it('should logout on /logout (post)', function (done) {
-        request(app)
-            .post('/logout')
-            .expect(200, LOGOUT_RESPONSE, done)
-    });
-
-    it('should logout on /logout (get)', function (done) {
-        request(app)
-            .get('/logout')
-            .expect(200, LOGOUT_RESPONSE, done)
-    });
-
-    it('should logout on /logout (delete)', function (done) {
-        request(app)
-            .delete('/logout')
-            .expect(200, LOGOUT_RESPONSE, done)
-    });
-
-    it('should has anonymous user on /info (get)', function (done) {
-        request(app)
-            .get('/info')
-            .expect(200, {user: {name: 'anonymous'}, authenticated: false}, done)
-    });
 });
 
 describe('basic auth', function () {
@@ -295,8 +265,8 @@ describe('token auth', function () {
 
     });
 
-
     it('should be ok on * if good tokenAuth (regular user) attempted', function (done) {
+        if (!token.user) throw new Error('Not ready');
         request(app)
             .get('/any')
             .set('Authorization', 'Bearer ' + token.user)
