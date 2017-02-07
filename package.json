@@ -1,6 +1,6 @@
 {
   "name": "auth-basic-jwt",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Basic auth + jwt module for express",
   "main": "index.js",
   "scripts": {
