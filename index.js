@@ -1,34 +1,10 @@
-/**
- * Created by max on 26/01/17.
- */
-
 "use strict";
 
 const basicAuth = require('basic-auth');
 const tokenAuth = require('./bearer-auth');
 const jwt = require('jsonwebtoken');
 const parseUrl = require('parseurl');
-
-/**
- * @param arg
- * @param args
- * @return {object}
- */
-function funcOrVar(arg, ...args) {
-    if (typeof arg == 'function') {
-        return arg.apply(null, args);
-    } else {
-        return arg;
-    }
-}
-
-function promisify(arg) {
-    if (arg instanceof Promise) {
-        return arg;
-    } else {
-        return Promise.resolve(arg);
-    }
-}
+const {promisify, funcOrVar} = require('./util');
 
 function unauthorized(res, message = 'Unauthorized') {
     res.set('WWW-Authenticate', 'Basic realm="Authorization Required"');
