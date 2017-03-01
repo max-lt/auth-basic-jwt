@@ -9,6 +9,11 @@ const tokenAuth = require('./bearer-auth');
 const jwt = require('jsonwebtoken');
 const parseUrl = require('parseurl');
 
+/**
+ * @param arg
+ * @param args
+ * @return {object}
+ */
 function funcOrVar(arg, ...args) {
     if (typeof arg == 'function') {
         return arg.apply(null, args);
@@ -116,22 +121,25 @@ module.exports = (secret, userGetter, options) => {
         if (url.pathname == '/login' && req.method == 'POST') {
             secretPromise.then((secret) => {
                 if (req.authenticated) {
-                    jwt.sign({
-                        user: funcOrVar(options.token.filter || req.user, req.user),
-                        exp: funcOrVar(options.token.exp, req.user),   // expiration date
-                        iss: funcOrVar(options.token.iss, req.user),
-                        sub: funcOrVar(options.token.sub, req.user),   // user id
-                        aud: funcOrVar(options.token.aud, req.user)   //client id
-                    }, secret, {}, (err, token) => {
-                        if (err) {
-                            err.type = 'jwt';
-                            return next(err);
-                        }
-                        return res.json({
-                            user: req.user,
-                            token: token
+                    jwt.sign(Object.assign(
+                        {},
+                        funcOrVar(options.token.filter || {user: req.user}, req.user),
+                        {
+                            exp: funcOrVar(options.token.exp, req.user),   // expiration date
+                            iss: funcOrVar(options.token.iss, req.user),
+                            sub: funcOrVar(options.token.sub, req.user),   // user id
+                            aud: funcOrVar(options.token.aud, req.user)   //client id
                         })
-                    })
+                        , secret, {}, (err, token) => {
+                            if (err) {
+                                err.type = 'jwt';
+                                return next(err);
+                            }
+                            return res.json({
+                                user: req.user,
+                                token: token
+                            })
+                        })
                 }
                 else return unauthorized(res, 'Bad user or Password');
             }).catch(next);
