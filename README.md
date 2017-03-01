@@ -9,32 +9,37 @@ Basic auth jwt module for express
 
 #### Initialization
 
-```
+```js
 const authModule = require('auth-basic-jwt')
 const auth = authModule(
     secret, // String or Buffer (can be forwarded by a promise) 
-    getter, // function(userLogin) must return an object with at least user.pass so it can be compared with basic auth credentials (Object can be forwarded by a promise)
+    userGetter, // function(userLogin) must return an object with at least a "pass" attribute in 
+                // order to be compared with basic auth credentials (can be forwarded by a promise)
     options // see below
-});
+})
 ```
+Note that the "_**userLogin**_" parameter must **match** the **expected basic auth login**
 
 ##### Options:
 
-```
+```js
 {
     token: {
-        filter :function(user) or var,// data to put in the token
+        filter :function(user) or var,// data to put in the token (default is {user: user})
         exp :function(user) or var,
         iss :function(user) or var,  
         sub :function(user) or var,       
         aud :function(user) or var,       
-    }
+    }    
 }
 ```
+- Note that the "_user_" parameter is the object forwarded by your "**_userGetter_**"
+- Be careful: is you define **_exp iss sub_** or **_aud_** in the first scope level of the filter function,
+they will be overwritten if you set them as options too
 
 #### Usage
 ##### Example of usage 
-```
+```js
 const app = require('express')();
 const auth = require('auth-basic-jwt')({
     secret: 'SECRET',
@@ -70,7 +75,7 @@ in RouteA
 ```js
 /// require ... ///
 
-router.get('*', auth.user ,yourFunction);
+router.get('yourPath', auth.user ,yourFunction);
 
 module.exports = router;
 ```
