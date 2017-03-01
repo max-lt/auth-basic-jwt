@@ -1,30 +1,10 @@
-const common = require('./common');
+"use strict";
 
+const common = require('./common');
 const assert = require('assert');
 const request = require('supertest');
 
-const PROMISE_DELAY = 5;
-
-const userGetter = (userName) => {
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve(userName == 'admin' ? {
-                    name: 'admin',
-                    pass: 'pass',
-                    admin: true
-                } : {
-                    name: userName,
-                    pass: 'pass'
-                })
-        }, PROMISE_DELAY)
-    })
-};
-
-const getTokenAsync = () => {
-    return new Promise(resolve => {
-        setTimeout(() => resolve('SECRET'), PROMISE_DELAY)
-    })
-};
+const PROMISE_DELAY = require('./common').PROMISE_DELAY;
 
 const auth = require('..')(
     getTokenAsync(),
@@ -40,20 +20,33 @@ const {
     UNAUTHORIZED_RESPONSE,
     EXPIRED_JWT_RESPONSE,
     INVALID_JWT_RESPONSE,
+    hasToken,
+    hasUserMatchingUser,
     btoa
 } = common(auth);
 
+function userGetter(userName) {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve(userName == 'admin' ? {
+                    name: 'admin',
+                    pass: 'pass',
+                    admin: true
+                } : {
+                    name: userName,
+                    pass: 'pass'
+                })
+        }, PROMISE_DELAY)
+    })
+}
+
+function getTokenAsync() {
+    return new Promise(resolve => {
+        setTimeout(() => resolve('SECRET'), PROMISE_DELAY)
+    })
+}
+
 describe('promises: basic auth', () => {
-
-    const hasToken = (res) => {
-        if (!('token' in res.body)) throw new Error("missing token key")
-    };
-
-    const hasUserMatchingUser = (res, userName) => {
-        if (!('user' in res.body)) throw new Error("missing user key");
-        if (!('name' in res.body.user)) throw new Error("missing user.name key");
-        if (res.body.user.name != userName) throw new Error("user.name value is not userName");
-    };
 
     it('should fail on unprotected if wrong basicAuth attempted', (done) => {
         request(app)
@@ -188,6 +181,7 @@ describe('promises: basic auth', () => {
             .expect(200, {user: {name: 'admin', admin: true}, authenticated: true}, done)
     });
 });
+
 
 describe('promises: token auth', () => {
 

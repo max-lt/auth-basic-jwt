@@ -1,9 +1,24 @@
+"use strict";
+
 const DEFAULT_RESPONSE = {};
 const LOGOUT_RESPONSE = {message: 'goodbye'};
 const LOGIN_FAILED_RESPONSE = {message: 'Bad user or Password'};
 const UNAUTHORIZED_RESPONSE = {message: 'Unauthorized'};
 const EXPIRED_JWT_RESPONSE = {message: 'jwt expired'};
 const INVALID_JWT_RESPONSE = {message: 'invalid signature'};
+const PROMISE_DELAY = 15;
+const ERROR_500_RESPONSE = {error: {message: 'Internal Server Error', code: 500}};
+const ERROR_404_RESPONSE = {error: 'Not Found', code: 404};
+
+const hasToken = (res) => {
+    if (!('token' in res.body)) throw new Error("missing token key")
+};
+
+const hasUserMatchingUser = (res, userName) => {
+    if (!('user' in res.body)) throw new Error("missing user key");
+    if (!('name' in res.body.user)) throw new Error("missing user.name key");
+    if (res.body.user.name != userName) throw new Error("user.name value is not userName");
+};
 
 const btoa = (w) => new Buffer(w).toString('base64');
 const atob = (w) => new Buffer(w, 'base64').toString();
@@ -12,16 +27,6 @@ function commonFactory(auth) {
     const app = require('express')();
 
     app.use(auth.core);
-// Handle Auth errors
-    app.use((error, req, res, next) => {
-        console.warn(error.message);
-        res.status(500).json({
-            error: {
-                message: 'Auth Error',
-                code: 500
-            }
-        })
-    });
 
     app.get('/admin', auth.admin, (req, res, next) => {
         next();
@@ -39,15 +44,13 @@ function commonFactory(auth) {
         res.status(200).json(DEFAULT_RESPONSE);
     });
 
+    app.use((req, res, next) => {
+        res.status(404).send(ERROR_404_RESPONSE);
+    });
+
 // Handle 500
     app.use((error, req, res, next) => {
-        console.warn(error.message);
-        res.status(500).json({
-            error: {
-                message: 'Internal Server Error',
-                code: 500
-            }
-        })
+        res.status(500).json(ERROR_500_RESPONSE)
     });
 
     return {
@@ -58,9 +61,25 @@ function commonFactory(auth) {
         UNAUTHORIZED_RESPONSE,
         EXPIRED_JWT_RESPONSE,
         INVALID_JWT_RESPONSE,
+        PROMISE_DELAY,
+        ERROR_500_RESPONSE,
+        ERROR_404_RESPONSE,
+        hasUserMatchingUser,
+        hasToken,
         btoa,
         atob
     };
 }
 
 module.exports = commonFactory;
+module.exports.DEFAULT_RESPONSE = DEFAULT_RESPONSE;
+module.exports.LOGOUT_RESPONSE = LOGOUT_RESPONSE;
+module.exports.LOGIN_FAILED_RESPONSE = LOGIN_FAILED_RESPONSE;
+module.exports.UNAUTHORIZED_RESPONSE = UNAUTHORIZED_RESPONSE;
+module.exports.EXPIRED_JWT_RESPONSE = EXPIRED_JWT_RESPONSE;
+module.exports.INVALID_JWT_RESPONSE = INVALID_JWT_RESPONSE;
+module.exports.PROMISE_DELAY = PROMISE_DELAY;
+module.exports.hasUserMatchingUser = hasUserMatchingUser;
+module.exports.hasToken = hasToken;
+module.exports.btoa = btoa;
+module.exports.atob = atob;

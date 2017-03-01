@@ -1,5 +1,6 @@
-const common = require('./common');
+"use strict";
 
+const common = require('./common');
 const request = require('supertest');
 const assert = require('assert');
 
@@ -23,10 +24,11 @@ const {
     UNAUTHORIZED_RESPONSE,
     EXPIRED_JWT_RESPONSE,
     INVALID_JWT_RESPONSE,
+    hasToken,
+    hasUserMatchingUser,
     btoa
 } = common(auth);
 
-console.log(this);
 
 describe('when no token are sent', () => {
     it('should be ok if not protected', (done) => {
@@ -72,17 +74,8 @@ describe('when no token are sent', () => {
     });
 });
 
+
 describe('basic auth', () => {
-
-    const hasToken = (res) => {
-        if (!('token' in res.body)) throw new Error("missing token key")
-    };
-
-    const hasUserMatchingUser = (res, userName) => {
-        if (!('user' in res.body)) throw new Error("missing user key");
-        if (!('name' in res.body.user)) throw new Error("missing user.name key");
-        if (res.body.user.name != userName) throw new Error("user.name value is not userName");
-    };
 
     it('should fail on unprotected if wrong basicAuth attempted', (done) => {
         request(app)
@@ -217,6 +210,7 @@ describe('basic auth', () => {
             .expect(200, {user: {name: 'admin', admin: true}, authenticated: true}, done)
     });
 });
+
 
 describe('token auth', () => {
 

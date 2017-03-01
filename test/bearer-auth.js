@@ -1,8 +1,8 @@
 "use strict";
 
 const bearerAuth = require('../bearer-auth');
-
 const assert = require('assert');
+
 
 describe('bearer-auth tests', () => {
 

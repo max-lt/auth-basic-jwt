@@ -1,10 +1,9 @@
 "use strict";
 
+const assert = require('assert');
+const {PROMISE_DELAY} = require('./common');
 const {promisify, funcOrVar} = require('../util');
 
-const assert = require('assert');
-
-const PROMISE_DELAY = 5;
 
 describe('util tests: promisify', () => {
 

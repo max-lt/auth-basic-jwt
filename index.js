@@ -96,6 +96,7 @@ module.exports = (secret, userGetter, options) => {
         //noinspection JSUnresolvedVariable
         if (url.pathname == '/login' && req.method == 'POST') {
             secretPromise.then((secret) => {
+                if (!secret) throw new Error("No secret set");
                 if (req.authenticated) {
                     jwt.sign(Object.assign(
                         {},
@@ -134,6 +135,7 @@ module.exports = (secret, userGetter, options) => {
         //else if JWT auth attempted
         if (token) {
             secretPromise.then((secret) => {
+                if (!secret) throw new Error("No secret set");
                 // for errors see:
                 // https://github.com/auth0/node-jsonwebtoken#jsonwebtokenerror
                 // https://github.com/auth0/node-jsonwebtoken#tokenexpirederror
