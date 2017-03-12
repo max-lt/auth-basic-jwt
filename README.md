@@ -5,7 +5,7 @@
 [![Test Coverage][coveralls-image]][coveralls-url]
 
 # auth-basic-jwt
-Basic auth jwt module for express
+Basic auth + JWT middleware for Express
 
 #### Initialization
 
