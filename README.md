@@ -25,17 +25,30 @@ Note that the "_**userLogin**_" parameter must **match** the **expected basic au
 ```js
 {
     token: {
-        filter :function(user) or var,// data to put in the token (default is {user: user})
+        filter :function(user) or var,// data to put in the token.user attribute (default is the whole user param without the pass attribute)
         exp :function(user) or var,
         iss :function(user) or var,  
         sub :function(user) or var,       
         aud :function(user) or var,       
-    }    
+    },
+    session: {
+        filter :function(user),// data to put in the req.user attribute (default is the whole user param without the pass attribute)
+        // Note that the result of session.filter will be use as parameter for the token options 
+    },
+    password: {
+        compare: function(user, pass):boolean // function used to compare the user password (user.pass) and the provided credential (pass). Default is (user.pass == pass)
+    },
+    unauthorized: function(req, res, next, message), // method )
+    login: {
+        path: string // path to match for a jwt request (default '/login') 
+        method: string // method to match for a jwt request (default 'POST')
+    }
 }
 ```
-- Note that the "_user_" parameter is the object forwarded by your "**_userGetter_**"
-- Be careful: is you define **_exp iss sub_** or **_aud_** in the first scope level of the filter function,
-they will be overwritten if you set them as options too
+- Note that the _**user**_ parameter is the object forwarded by your "**_userGetter_**"
+- Be careful: if you don't set token.filter, _**user**_ must be an object, 
+if you use mongoose for example ensure that it have been converted with the toObject method
+in order to let the default filter [delete](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/delete) the _**pass**_ attribute
 
 #### Usage
 ##### Example of usage 
