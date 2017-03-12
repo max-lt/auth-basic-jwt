@@ -37,6 +37,10 @@ module.exports = (secret, userGetter, options) => {
         return _u;
     }
 
+    function defaultPassCompare(user, pass) {
+        return user.pass === pass;
+    }
+
     function authBasic(req, res, next) {
 
         //if previous auth succeed
@@ -48,7 +52,7 @@ module.exports = (secret, userGetter, options) => {
         //if basicAuth attempted
         if (basic && basic.name && basic.pass) {
             promisify(userGetter(basic.name)).then((user) => {
-                if (user && basic.pass === user.pass) {
+                if (user && funcOrVar(opts.password.compare || defaultPassCompare, user, basic.pass)) {
                     req.authenticated = true;
                     req.user = funcOrVar(opts.session.filter || defaultFilter, user);
                     return next();
