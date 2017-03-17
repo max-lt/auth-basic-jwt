@@ -14,8 +14,9 @@ const auth = require('..')(
 
 const {
     app,
-    DEFAULT_RESPONSE,
-    LOGOUT_RESPONSE,
+    DEFAULT_USER_RESPONSE,
+    DEFAULT_ADMIN_RESPONSE,
+    DEFAULT_ANONYMOUS_RESPONSE,
     LOGIN_FAILED_RESPONSE,
     UNAUTHORIZED_RESPONSE,
     EXPIRED_JWT_RESPONSE,
@@ -108,14 +109,14 @@ describe('promises: basic auth', () => {
         request(app)
             .get('/any')
             .set('Authorization', 'Basic ' + btoa('user:pass'))
-            .expect(200, DEFAULT_RESPONSE, done)
+            .expect(200, DEFAULT_USER_RESPONSE, done)
     });
 
     it('should be ok on user (get) if good basicAuth (regular user) attempted', (done) => {
         request(app)
             .get('/user')
             .set('Authorization', 'Basic ' + btoa('user:pass'))
-            .expect(200, DEFAULT_RESPONSE, done)
+            .expect(200, DEFAULT_USER_RESPONSE, done)
     });
 
     it('should fail on admin (get) if good basicAuth (regular user) attempted', (done) => {
@@ -136,14 +137,14 @@ describe('promises: basic auth', () => {
         request(app)
             .get('/admin')
             .set('Authorization', 'Basic ' + btoa('admin:pass'))
-            .expect(200, DEFAULT_RESPONSE, done)
+            .expect(200, DEFAULT_ADMIN_RESPONSE, done)
     });
 
     it('should be ok on /login (get) if good basicAuth (regular user) attempted, but no token expected', (done) => {
         request(app)
             .get('/login')
             .set('Authorization', 'Basic ' + btoa('user:pass'))
-            .expect(200, DEFAULT_RESPONSE, done)
+            .expect(200, DEFAULT_USER_RESPONSE, done)
     });
 
     it('should return token on /login (post) if good basicAuth (regular user) attempted', (done) => {
@@ -171,14 +172,14 @@ describe('promises: basic auth', () => {
         request(app)
             .get('/info')
             .set('Authorization', 'Basic ' + btoa('user:pass'))
-            .expect(200, {user: {name: 'user'}, authenticated: true}, done)
+            .expect(200, DEFAULT_USER_RESPONSE, done)
     });
 
     it('should has authenticated admin on /info (get) if good basicAuth (admin user) attempted', (done) => {
         request(app)
             .get('/info')
             .set('Authorization', 'Basic ' + btoa('admin:pass'))
-            .expect(200, {user: {name: 'admin', admin: true}, authenticated: true}, done)
+            .expect(200, DEFAULT_ADMIN_RESPONSE, done)
     });
 });
 
@@ -228,14 +229,14 @@ describe('promises: token auth', () => {
         request(app)
             .get('/any')
             .set('Authorization', 'Bearer ' + token.user)
-            .expect(200, DEFAULT_RESPONSE, done)
+            .expect(200, DEFAULT_USER_RESPONSE, done)
     });
 
     it('should be ok on /user if good tokenAuth (regular user) attempted', (done) => {
         request(app)
             .get('/user')
             .set('Authorization', 'Bearer ' + token.user)
-            .expect(200, DEFAULT_RESPONSE, done)
+            .expect(200, DEFAULT_USER_RESPONSE, done)
     });
 
     it('should fail on /admin if good tokenAuth (regular user) attempted', (done) => {
@@ -249,7 +250,7 @@ describe('promises: token auth', () => {
         request(app)
             .get('/admin')
             .set('Authorization', 'Bearer ' + token.admin)
-            .expect(200, DEFAULT_RESPONSE, done)
+            .expect(200, DEFAULT_ADMIN_RESPONSE, done)
     });
 
     it('should fail on /login (post) if good tokenAuth (regular user) attempted', (done) => {
@@ -270,14 +271,14 @@ describe('promises: token auth', () => {
         request(app)
             .get('/info')
             .set('Authorization', 'Bearer ' + token.user)
-            .expect(200, {user: {name: 'user'}, authenticated: true}, done)
+            .expect(200, DEFAULT_USER_RESPONSE, done)
     });
 
     it('should has authenticated admin on /info (get) if good tokenAuth (admin user) attempted', (done) => {
         request(app)
             .get('/info')
             .set('Authorization', 'Bearer ' + token.admin)
-            .expect(200, {user: {name: 'admin', admin: true}, authenticated: true}, done)
+            .expect(200, DEFAULT_ADMIN_RESPONSE, done)
     });
 
     it('should fail on /user if expired tokenAuth (regular user) attempted', (done) => {

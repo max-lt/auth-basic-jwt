@@ -17,11 +17,20 @@ module.exports = (secret, userGetter, options) => {
     if (!userGetter) throw new Error("No userGetter set");
     const opts = Object.assign({token: {}, login: {}, password: {}, session: {}}, options);
 
+    function pack(req, res, next) {
+        if (req._user) {
+            req.user = funcOrVar(opts.session.filter || defaultFilter, req._user);
+            delete req._user;
+        }
+        if (next) next();
+    }
+
     /** @type {Promise<string|buffer>} */
     let secretPromise = promisify(secret);
 
     /** @private */
     function unauthorized(req, res, next, message = 'Unauthorized') {
+        pack(req);
         if (opts.unauthorized) {
             return opts.unauthorized(req, res, next, message);
         } else {
@@ -35,6 +44,10 @@ module.exports = (secret, userGetter, options) => {
         let _u = Object.assign(user);
         delete _u.pass; //hiding user pass in response
         return _u;
+    }
+
+    function defaultTokenTransform(token) {
+        return token.user || token.iss || null;
     }
 
     function defaultPassCompare(user, pass) {
@@ -54,7 +67,7 @@ module.exports = (secret, userGetter, options) => {
             promisify(userGetter(basic.name)).then((user) => {
                 if (user && funcOrVar(opts.password.compare || defaultPassCompare, user, basic.pass)) {
                     req.authenticated = true;
-                    req.user = funcOrVar(opts.session.filter || defaultFilter, user);
+                    req._user = user;
                     return next();
                 } else {
                     req.authenticated = false;
@@ -110,15 +123,15 @@ module.exports = (secret, userGetter, options) => {
             secretPromise.then((secret) => {
                 if (!secret) throw new Error("No secret set");
                 if (req.authenticated) {
-                    const user = funcOrVar(opts.token.filter || defaultFilter, req.user);
+                    const user = funcOrVar(opts.token.filter || defaultFilter, req._user);
                     jwt.sign(Object.assign(
                         {},
                         {user},
                         {
-                            exp: funcOrVar(opts.token.exp, req.user),   // expiration date
-                            iss: funcOrVar(opts.token.iss, req.user),
-                            sub: funcOrVar(opts.token.sub, req.user),   // user id
-                            aud: funcOrVar(opts.token.aud, req.user)   //client id
+                            exp: funcOrVar(opts.token.exp, req._user),   // expiration date
+                            iss: funcOrVar(opts.token.iss, req._user),
+                            sub: funcOrVar(opts.token.sub, req._user),   // user id
+                            aud: funcOrVar(opts.token.aud, req._user)   //client id
                         }),
                         secret, {}, (err, token) => {
                             if (err) {
@@ -152,7 +165,7 @@ module.exports = (secret, userGetter, options) => {
                     if (err) return unauthorized(req, res, next, err.message || 'jwt error');
                     else {
                         req.authenticated = true;
-                        req.user = decoded.user;
+                        req.user = funcOrVar(opts.token.decode || defaultTokenTransform, decoded);
                     }
                     return next();
                 });
@@ -165,6 +178,6 @@ module.exports = (secret, userGetter, options) => {
         any: anyLevel,
         user: userLevel,
         admin: adminLevel,
-        core: [logout, authBasic, login, authJWT, anyLevel]
+        core: [logout, authBasic, login, pack, authJWT, anyLevel]
     };
 };

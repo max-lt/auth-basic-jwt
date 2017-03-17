@@ -26,6 +26,7 @@ Note that the "_**userLogin**_" parameter must **match** the **expected basic au
 {
     token: {
         filter :function(user) or var,// data to put in the token.user attribute (default is the whole user param without the pass attribute)
+        decode :function(token) or var,// data to put in the req.user attribute (default is the token.user data)
         exp :function(user) or var,
         iss :function(user) or var,  
         sub :function(user) or var,       
@@ -33,7 +34,6 @@ Note that the "_**userLogin**_" parameter must **match** the **expected basic au
     },
     session: {
         filter :function(user),// data to put in the req.user attribute (default is the whole user param without the pass attribute)
-        // Note that the result of session.filter will be use as parameter for the token options 
     },
     password: {
         compare: function(user, pass):boolean // function used to compare the user password (user.pass) and the provided credential (pass). Default is (user.pass == pass)

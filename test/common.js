@@ -1,6 +1,8 @@
 "use strict";
 
-const DEFAULT_RESPONSE = {};
+const DEFAULT_ANONYMOUS_RESPONSE = {authenticated: false, user: {name: 'anonymous'}};
+const DEFAULT_USER_RESPONSE = {authenticated: true, user: {name: 'user'}};
+const DEFAULT_ADMIN_RESPONSE = {authenticated: true, user: {name: 'admin', admin: true}};
 const LOGOUT_RESPONSE = {message: 'goodbye'};
 const LOGIN_FAILED_RESPONSE = {message: 'Bad user or Password'};
 const UNAUTHORIZED_RESPONSE = {message: 'Unauthorized'};
@@ -36,12 +38,8 @@ function commonFactory(auth) {
         next();
     });
 
-    app.get('/info', (req, res) => {
-        res.status(200).json({user: req.user, authenticated: req.authenticated});
-    });
-
     app.get('*', (req, res) => {
-        res.status(200).json(DEFAULT_RESPONSE);
+        res.status(200).json({user: req.user, authenticated: req.authenticated});
     });
 
     app.use((req, res, next) => {
@@ -55,7 +53,9 @@ function commonFactory(auth) {
 
     return {
         app,
-        DEFAULT_RESPONSE,
+        DEFAULT_ANONYMOUS_RESPONSE,
+        DEFAULT_USER_RESPONSE,
+        DEFAULT_ADMIN_RESPONSE,
         LOGOUT_RESPONSE,
         LOGIN_FAILED_RESPONSE,
         UNAUTHORIZED_RESPONSE,
@@ -72,7 +72,9 @@ function commonFactory(auth) {
 }
 
 module.exports = commonFactory;
-module.exports.DEFAULT_RESPONSE = DEFAULT_RESPONSE;
+module.exports.DEFAULT_ANONYMOUS_RESPONSE = DEFAULT_ANONYMOUS_RESPONSE;
+module.exports.DEFAULT_USER_RESPONSE = DEFAULT_USER_RESPONSE;
+module.exports.DEFAULT_ADMIN_RESPONSE = DEFAULT_ADMIN_RESPONSE;
 module.exports.LOGOUT_RESPONSE = LOGOUT_RESPONSE;
 module.exports.LOGIN_FAILED_RESPONSE = LOGIN_FAILED_RESPONSE;
 module.exports.UNAUTHORIZED_RESPONSE = UNAUTHORIZED_RESPONSE;
