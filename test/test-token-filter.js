@@ -24,8 +24,7 @@ const DEFAULT_USER_TOKEN_DECODED_RESPONSE = {name: 'user', tokenDecoded: true};
 const auth = require('..')('SECRET', userGetter, {
     session: {
         filter: (user) => {
-            assert(user.pass)
-            console.error('session.filter', user);
+            assert(user.pass);
             user.sessionfilter = true;
             return user;
         }

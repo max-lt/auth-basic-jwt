@@ -38,7 +38,7 @@ Note that the "_**userLogin**_" parameter must **match** the **expected basic au
     password: {
         compare: function(user, pass):boolean // function used to compare the user password (user.pass) and the provided credential (pass). Default is (user.pass == pass)
     },
-    unauthorized: function(req, res, next, message), // method )
+    unauthorized: function(error, req, res, next), // method )
     login: {
         path: string // path to match for a jwt request (default '/login') 
         method: string // method to match for a jwt request (default 'POST')

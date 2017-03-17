@@ -19,7 +19,7 @@ function funcOrVar(arg, ...args) {
  * @return {Promise}
  * @private
  */
-function promisify(arg) {
+function promiseOrVar(arg) {
     if (arg instanceof Promise) {
         return arg;
     } else {
@@ -27,7 +27,4 @@ function promisify(arg) {
     }
 }
 
-module.exports = {
-    promisify,
-    funcOrVar
-};
+module.exports = {promiseOrVar, funcOrVar};

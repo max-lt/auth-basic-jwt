@@ -2,14 +2,14 @@
 
 const assert = require('assert');
 const {PROMISE_DELAY} = require('./common');
-const {promisify, funcOrVar} = require('../util');
+const {promiseOrVar, funcOrVar} = require('../util');
 
 
 describe('util tests: promisify', () => {
 
     it('should return a promise witch resolve a common parameter', (done) => {
         const data = 3;
-        const test = promisify(data);
+        const test = promiseOrVar(data);
 
         assert(test instanceof Promise);
 
@@ -21,7 +21,7 @@ describe('util tests: promisify', () => {
 
     it('should return a promise witch resolve an immediate promise parameter', (done) => {
         const data = 3;
-        const test = promisify(Promise.resolve(data));
+        const test = promiseOrVar(Promise.resolve(data));
 
         assert(test instanceof Promise);
 
@@ -33,7 +33,7 @@ describe('util tests: promisify', () => {
 
     it('should return a promise witch resolve a delayed promise parameter', (done) => {
         const data = 3;
-        const test = promisify(new Promise(r => setTimeout(_ => r(data), PROMISE_DELAY)));
+        const test = promiseOrVar(new Promise(r => setTimeout(_ => r(data), PROMISE_DELAY)));
 
         assert(test instanceof Promise);
 

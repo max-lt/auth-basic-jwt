@@ -4,7 +4,18 @@ const basicAuth = require('basic-auth');
 const tokenAuth = require('./bearer-auth');
 const jwt = require('jsonwebtoken');
 const parseUrl = require('parseurl');
-const {promisify, funcOrVar} = require('./util');
+const {promiseOrVar, funcOrVar} = require('./util');
+
+class AuthenticationError extends Error {
+    constructor(message) {
+        if (message instanceof Error) {
+            super(message.message);
+            Object.assign(this, message);
+        }
+        else super(message);
+        this.name = 'AuthenticationError';
+    }
+}
 
 /**
  * @param secret
@@ -26,18 +37,18 @@ module.exports = (secret, userGetter, options) => {
     }
 
     /** @type {Promise<string|buffer>} */
-    let secretPromise = promisify(secret);
+    let secretPromise = promiseOrVar(secret);
 
     /** @private */
-    function unauthorized(req, res, next, message = 'Unauthorized') {
+    function unauthorized(error, req, res, next) {
         pack(req);
-        if (opts.unauthorized) {
-            return opts.unauthorized(req, res, next, message);
-        } else {
-            res.set('WWW-Authenticate', 'Basic realm="Authorization Required"');
-            res.status(401);
-            return res.send({message: message});
-        }
+
+        if (!(error instanceof AuthenticationError))
+            return next(error);
+
+        res.set('WWW-Authenticate', 'Basic realm="Authorization Required"');
+        res.status(401);
+        return res.send({message: error.message || 'Unauthorized'});
     }
 
     function defaultFilter(user) {
@@ -64,18 +75,22 @@ module.exports = (secret, userGetter, options) => {
 
         //if basicAuth attempted
         if (basic && basic.name && basic.pass) {
-            promisify(userGetter(basic.name)).then((user) => {
-                if (user && funcOrVar(opts.password.compare || defaultPassCompare, user, basic.pass)) {
-                    req.authenticated = true;
-                    req._user = user;
-                    return next();
-                } else {
-                    req.authenticated = false;
-                    return unauthorized(req, res, next, 'Bad user or Password');
-                }
-            }).catch((error) => {
-                return unauthorized(req, res, next, 'Bad user or Password');
-            });
+            promiseOrVar(userGetter(basic.name))
+                .then((user) => {
+                    if (user) {
+                        return promiseOrVar(funcOrVar(opts.password.compare || defaultPassCompare, user, basic.pass))
+                            .then((validated) => {
+                                if (validated) {
+                                    req.authenticated = true;
+                                    req._user = user;
+                                    return next();
+                                }
+                                else throw new AuthenticationError('Bad user or Password');
+                            })
+                    }
+                    else throw new AuthenticationError('No user match')
+                })
+                .catch(next);
         }
         else return next();
     }
@@ -102,12 +117,12 @@ module.exports = (secret, userGetter, options) => {
     }
 
     function userLevel(req, res, next) {
-        if (!req.authenticated) unauthorized(req, res, next);
+        if (!req.authenticated) next(new AuthenticationError());
         else next();
     }
 
     function adminLevel(req, res, next) {
-        if (!req.authenticated || !req.user.admin) unauthorized(req, res, next);
+        if (!req.authenticated || !req.user.admin) next(new AuthenticationError());
         else next();
     }
 
@@ -120,29 +135,33 @@ module.exports = (secret, userGetter, options) => {
 
         if (url.pathname == (opts.login.path || '/login')
             && req.method == (opts.login.method || 'POST')) {
-            secretPromise.then((secret) => {
-                if (!secret) throw new Error("No secret set");
-                if (req.authenticated) {
-                    const user = funcOrVar(opts.token.filter || defaultFilter, req._user);
-                    jwt.sign(Object.assign(
-                        {},
-                        {user},
-                        {
-                            exp: funcOrVar(opts.token.exp, req._user),   // expiration date
-                            iss: funcOrVar(opts.token.iss, req._user),
-                            sub: funcOrVar(opts.token.sub, req._user),   // user id
-                            aud: funcOrVar(opts.token.aud, req._user)   //client id
-                        }),
-                        secret, {}, (err, token) => {
-                            if (err) {
-                                err.type = 'jwt';
-                                return next(err);
-                            }
-                            return res.json({user, token})
-                        })
-                }
-                else return unauthorized(req, res, next, 'Bad user or Password');
-            }).catch(next);
+            secretPromise
+                .then((secret) => {
+                    if (!secret) throw new Error("No secret set");
+                    if (req.authenticated) {
+                        return promiseOrVar(funcOrVar(opts.token.filter || defaultFilter, req._user))
+                            .then((user) => new Promise((resolve, reject) => jwt.sign(Object.assign(
+                                {},
+                                {user},
+                                {
+                                    exp: funcOrVar(opts.token.exp, req._user),   // expiration date
+                                    iss: funcOrVar(opts.token.iss, req._user),
+                                    sub: funcOrVar(opts.token.sub, req._user),   // user id
+                                    aud: funcOrVar(opts.token.aud, req._user)   //client id
+                                }),
+                                secret, {}, (err, token) => {
+                                    if (err) {
+                                        err.type = 'jwt';
+                                        reject(err);
+                                    }
+                                    else resolve({user, token});
+                                })
+                            ))
+                    }
+                    else throw new AuthenticationError('Bad user or Password');
+                })
+                .then((tokenAndUser) => res.json(tokenAndUser))
+                .catch(next);
         }
         else return next();
 
@@ -155,29 +174,37 @@ module.exports = (secret, userGetter, options) => {
         let token = tokenAuth(req);
 
         //else if JWT auth attempted
-        if (token) {
-            secretPromise.then((secret) => {
+        if (token) secretPromise
+            .then((secret) => {
                 if (!secret) throw new Error("No secret set");
                 // for errors see:
                 // https://github.com/auth0/node-jsonwebtoken#jsonwebtokenerror
                 // https://github.com/auth0/node-jsonwebtoken#tokenexpirederror
-                jwt.verify(token, secret, function (err, decoded) {
-                    if (err) return unauthorized(req, res, next, err.message || 'jwt error');
-                    else {
-                        req.authenticated = true;
-                        req.user = funcOrVar(opts.token.decode || defaultTokenTransform, decoded);
-                    }
-                    return next();
-                });
-            }).catch(next);
-        }
-        else return next();
+                return new Promise((resolve, reject) => {
+                    jwt.verify(token, secret, (err, decoded) => {
+                        if (err) reject(err);
+                        else resolve(decoded)
+                    });
+                })
+            })
+            .catch((err) => {
+                throw new AuthenticationError(err || 'jwt error');
+            })
+            .then((decoded) => promiseOrVar(funcOrVar(opts.token.decode || defaultTokenTransform, decoded)))
+            .then((user) => {
+                req.authenticated = true;
+                req.user = user;
+                next();
+            })
+            .catch(next);
+        else next();
     }
 
     return {
         any: anyLevel,
         user: userLevel,
         admin: adminLevel,
+        unauthorized: unauthorized,
         core: [logout, authBasic, login, pack, authJWT, anyLevel]
     };
 };
