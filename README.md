@@ -12,11 +12,11 @@ Basic auth + JWT middleware for Express
 ```js
 const authModule = require('auth-basic-jwt')
 const auth = authModule(
-    secret, // String or Buffer (can be forwarded by a promise) 
-    userGetter, // function(userLogin) must return an object with at least a "pass" attribute in 
-                // order to be compared with basic auth credentials (can be forwarded by a promise)
-    options // see below
-})
+    secret,         // String or Buffer (can be forwarded by a promise) 
+    userGetter*,    // function(userLogin) must return an object with at least a "pass" 
+                    // attribute in order to be compared with basic auth credentials
+    options         // Object (see below)
+)
 ```
 Note that the "_**userLogin**_" parameter must **match** the **expected basic auth login**
 
@@ -25,18 +25,23 @@ Note that the "_**userLogin**_" parameter must **match** the **expected basic au
 ```js
 {
     token: {
-        filter :function(user) or var,// data to put in the token.user attribute (default is the whole user param without the pass attribute)
-        decode :function(token) or var,// data to put in the req.user attribute (default is the token.user data)
-        exp :function(user) or var,
-        iss :function(user) or var,  
-        sub :function(user) or var,       
-        aud :function(user) or var,       
+        filter* :   function(user) or var, // Data to put in the token.user attribute 
+                       // (default is the whole user param without the pass attribute)
+        decode* :   function(token) or var, // Data to put in the req.user attribute 
+                       // (default is the token.user data)
+        exp :       function(user) or var,
+        iss :       function(user) or var,  
+        sub :       function(user) or var,       
+        aud :       function(user) or var,       
     },
     session: {
-        filter :function(user),// data to put in the req.user attribute (default is the whole user param without the pass attribute)
+        filter* :   function(user), // Data to put in the req.user attribute
+                       // (default is the whole user param without the pass attribute)
     },
     password: {
-        compare: function(user, pass):boolean // function used to compare the user password (user.pass) and the provided credential (pass). Default is (user.pass == pass)
+        compare*:   function(user, pass):boolean // function used to compare 
+                       // the user password (user.pass) and the provided credential (pass). 
+                       // Default is (user.pass == pass)
     },
     unauthorized: function(error, req, res, next), // method )
     login: {
@@ -45,14 +50,28 @@ Note that the "_**userLogin**_" parameter must **match** the **expected basic au
     }
 }
 ```
-- Note that the _**user**_ parameter is the object forwarded by your "**_userGetter_**"
-- Be careful: if you don't set token.filter, _**user**_ must be an object, 
-if you use mongoose for example ensure that it have been converted with the toObject method
-in order to let the default filter [delete](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/delete) the _**pass**_ attribute
+- Functions marked with `*` can return a promise.
+- Note that the _**user**_ parameter is the object forwarded by your **_userGetter_**.
+- Be careful: if you don't set token.filter, _**user**_ must be an object,
+in order to let the _**default filter**_ [delete](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/delete) the _**pass**_ attribute
+(if you use mongoose for example ensure that it have been converted with the toObject method (or define the session & token filters))
 
 #### Usage
-##### Example of usage 
+##### Example of usage: 
+
+your-auth-config.js
 ```js
+function userGetter(userLogin) {
+    return {
+        email: userLogin,
+        pass: 'password'
+    }
+}
+// OR //
+function userGetter(userLogin) {
+    return Promise.resolve({email: userLogin, pass: 'password'});
+}
+
 const app = require('express')();
 const auth = require('auth-basic-jwt')({
     secret: 'SECRET',
@@ -60,6 +79,13 @@ const auth = require('auth-basic-jwt')({
     /* options */
 });
 
+module.exports = auth;
+```
+
+express entry point
+```js
+/// require ... ///
+const auth = require('./your-auth-config');
 app.use(auth.core);
 
 const routeA = require('./routes/routeA');
@@ -72,21 +98,12 @@ app.use('/a', routeA);
 app.use('/b', auth.user, routeB);
 app.use('/c', auth.admin, routeC);
 
-function userGetter(userLogin) {
-    return {
-        email: userLogin,
-        pass: 'password'
-    }
-}
-// OR //
-function userGetter(userLogin) {
-    return Promise.resolve({email: userLogin, pass: 'password'});
-}
-
+app.use(auth.unauthorized); // catch errors that are instance of AuthenticationError
 ```
-in RouteA
+RouteA.js
 ```js
 /// require ... ///
+const auth = require('./your-auth-config')
 
 router.get('yourPath', auth.user ,yourFunction);
 

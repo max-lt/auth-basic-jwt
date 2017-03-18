@@ -29,11 +29,13 @@ module.exports = (secret, userGetter, options) => {
     const opts = Object.assign({token: {}, login: {}, password: {}, session: {}}, options);
 
     function pack(req, res, next) {
-        if (req._user) {
-            req.user = funcOrVar(opts.session.filter || defaultFilter, req._user);
-            delete req._user;
-        }
-        if (next) next();
+        if (req._user) promiseOrVar(funcOrVar(opts.session.filter || defaultFilter, req._user))
+            .then((user) => {
+                req.user = user;
+                delete req._user;
+                next();
+            });
+        else next();
     }
 
     /** @type {Promise<string|buffer>} */
@@ -41,14 +43,17 @@ module.exports = (secret, userGetter, options) => {
 
     /** @private */
     function unauthorized(error, req, res, next) {
-        pack(req);
 
         if (!(error instanceof AuthenticationError))
             return next(error);
 
-        res.set('WWW-Authenticate', 'Basic realm="Authorization Required"');
-        res.status(401);
-        return res.send({message: error.message || 'Unauthorized'});
+        if (opts.unauthorized) {
+            return opts.unauthorized(error, req, res, next);
+        } else {
+            res.set('WWW-Authenticate', 'Basic realm="Authorization Required"');
+            res.status(401);
+            return res.send({message: error.message || 'Unauthorized'});
+        }
     }
 
     function defaultFilter(user) {

@@ -4,7 +4,7 @@ const bearerAuth = require('../bearer-auth');
 const assert = require('assert');
 
 
-describe('bearer-auth tests', () => {
+describe('bearer-auth', () => {
 
     it('auth without parameter should throw Error', () => {
         assert.throws(bearerAuth, TypeError)

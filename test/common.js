@@ -1,5 +1,8 @@
 "use strict";
 
+const request = require('supertest');
+const assert = require('assert');
+
 const DEFAULT_ANONYMOUS_RESPONSE = {authenticated: false, user: {name: 'anonymous'}};
 const DEFAULT_USER_RESPONSE = {authenticated: true, user: {name: 'user'}};
 const DEFAULT_ADMIN_RESPONSE = {authenticated: true, user: {name: 'admin', admin: true}};
@@ -55,6 +58,8 @@ function commonFactory(auth) {
 
     return {
         app,
+        request,
+        assert,
         DEFAULT_ANONYMOUS_RESPONSE,
         DEFAULT_USER_RESPONSE,
         DEFAULT_ADMIN_RESPONSE,
@@ -87,3 +92,5 @@ module.exports.hasUserMatchingUser = hasUserMatchingUser;
 module.exports.hasToken = hasToken;
 module.exports.btoa = btoa;
 module.exports.atob = atob;
+module.exports.request = request;
+module.exports.assert = assert;
