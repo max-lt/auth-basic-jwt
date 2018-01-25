@@ -1,21 +1,13 @@
 "use strict";
 
 const common = require('./common');
-const request = common.request;
-const assert = common.assert;
+const {DEFAULT_ADMIN, makeDefaultUser, request, assert} = common;
 
-const userGetter = (userName) => (userName == 'admin' ? {
-        name: 'admin',
-        pass: 'pass',
-        admin: true
-    } : {
-        name: userName,
-        pass: 'pass'
-    });
+const userGetter = (userName) => userName == 'admin' ? DEFAULT_ADMIN : makeDefaultUser(userName);
 
 const auth = require('..');
 
-describe('config', ()=> {
+describe('config', () => {
 
     describe('secret', () => {
 

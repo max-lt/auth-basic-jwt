@@ -2,8 +2,7 @@
 
 const assert = require('assert');
 const {PROMISE_DELAY} = require('./common');
-const {promiseOrVar, funcOrVar} = require('../util');
-
+const {promiseOrVar, funcOrVar} = require('../lib/util');
 
 describe('utils', () => {
 

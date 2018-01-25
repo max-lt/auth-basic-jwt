@@ -3,9 +3,11 @@
 const request = require('supertest');
 const assert = require('assert');
 
+const DEFAULT_USER = {name: 'user', roles: ['user'], pass: 'pass'};
+const DEFAULT_ADMIN = {name: 'admin', roles: ['admin'], pass: 'pass'};
 const DEFAULT_ANONYMOUS_RESPONSE = {authenticated: false, user: {name: 'anonymous'}};
-const DEFAULT_USER_RESPONSE = {authenticated: true, user: {name: 'user'}};
-const DEFAULT_ADMIN_RESPONSE = {authenticated: true, user: {name: 'admin', admin: true}};
+const DEFAULT_USER_RESPONSE = {authenticated: true, user: {name: 'user', roles: ['user']}};
+const DEFAULT_ADMIN_RESPONSE = {authenticated: true, user: {name: 'admin', roles: ['admin']}};
 const LOGOUT_RESPONSE = {message: 'goodbye'};
 const LOGIN_FAILED_RESPONSE = {message: 'Bad user or Password'};
 const UNAUTHORIZED_RESPONSE = {message: 'Unauthorized'};
@@ -19,6 +21,8 @@ const hasToken = (res) => {
     if (!('token' in res.body)) throw new Error("missing token key")
 };
 
+const makeDefaultUser = (name, pass = 'pass') => ({name, roles: ['user'], pass});
+
 const hasUserMatchingUser = (res, userName) => {
     if (!('user' in res.body)) throw new Error("missing user key");
     if (!('name' in res.body.user)) throw new Error("missing user.name key");
@@ -31,7 +35,7 @@ const atob = (w) => new Buffer(w, 'base64').toString();
 function commonFactory(auth) {
     const app = require('express')();
 
-    app.use(auth.core);
+    app.use(auth.default);
 
     app.get('/admin', auth.admin, (req, res, next) => {
         next();
@@ -79,7 +83,10 @@ function commonFactory(auth) {
 }
 
 module.exports = commonFactory;
+module.exports.makeDefaultUser = makeDefaultUser;
 module.exports.DEFAULT_ANONYMOUS_RESPONSE = DEFAULT_ANONYMOUS_RESPONSE;
+module.exports.DEFAULT_USER = DEFAULT_USER;
+module.exports.DEFAULT_ADMIN = DEFAULT_ADMIN;
 module.exports.DEFAULT_USER_RESPONSE = DEFAULT_USER_RESPONSE;
 module.exports.DEFAULT_ADMIN_RESPONSE = DEFAULT_ADMIN_RESPONSE;
 module.exports.LOGOUT_RESPONSE = LOGOUT_RESPONSE;

@@ -1,27 +1,13 @@
 "use strict";
 
 const common = require('./common');
+const {DEFAULT_ADMIN, makeDefaultUser, PROMISE_DELAY} = require('./common');
 const makeTests = require('./factory');
-
-const PROMISE_DELAY = common.PROMISE_DELAY;
-
-const auth = require('..')(
-    getTokenAsync(),
-    userGetter,
-    {token: {exp: (user) => Math.floor(Date.now() / 1000) + (60 * 60)}}
-);
 
 function userGetter(userName) {
     return new Promise(resolve => {
         setTimeout(() => {
-            resolve(userName == 'admin' ? {
-                    name: 'admin',
-                    pass: 'pass',
-                    admin: true
-                } : {
-                    name: userName,
-                    pass: 'pass'
-                })
+            resolve(userName == 'admin' ? DEFAULT_ADMIN : makeDefaultUser(userName))
         }, PROMISE_DELAY)
     })
 }
@@ -32,4 +18,10 @@ function getTokenAsync() {
     })
 }
 
-makeTests('promises', common(auth));
+const auth = require('..')(
+    getTokenAsync(),
+    userGetter,
+    {token: {exp: (user) => Math.floor(Date.now() / 1000) + (60 * 60)}}
+);
+
+describe('promises', () => makeTests(auth));

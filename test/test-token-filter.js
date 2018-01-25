@@ -1,32 +1,30 @@
 "use strict";
 
 const common = require('./common');
+const {DEFAULT_ADMIN, makeDefaultUser} = require('./common');
 const request = require('supertest');
 const assert = require('assert');
 
-const userGetter = (userName) => (userName == 'admin' ? {
-        name: 'admin',
-        pass: 'pass',
-        admin: true
-    } : {
-        name: userName,
-        pass: 'pass'
-    });
+const userGetter = (userName) => userName == 'admin' ? DEFAULT_ADMIN : makeDefaultUser(userName);
 
-const DEFAULT_USER_SESSION_RESPONSE = {user: {name: 'user', pass: 'pass', sessionfilter: true}, authenticated: true};
-const DEFAULT_ADMIN_SESSION_RESPONSE = {
-    user: {name: 'admin', admin: true, pass: 'pass', sessionfilter: true},
+const DEFAULT_USER_SESSION_RESPONSE = {
+    user: {name: 'user', roles: ['user'], pass: 'pass', sessionFilter: true},
     authenticated: true
 };
-const DEFAULT_ADMIN_TOKEN_DECODED_RESPONSE = {admin: true, name: 'admin', tokenDecoded: true};
-const DEFAULT_USER_TOKEN_DECODED_RESPONSE = {name: 'user', tokenDecoded: true};
+const DEFAULT_ADMIN_SESSION_RESPONSE = {
+    user: {name: 'admin', roles: ['admin'], pass: 'pass', sessionFilter: true},
+    authenticated: true
+};
+const DEFAULT_ADMIN_TOKEN_DECODED_RESPONSE = {roles: ['admin'], name: 'admin', tokenDecoded: true};
+const DEFAULT_USER_TOKEN_DECODED_RESPONSE = {roles: ['user'], name: 'user', tokenDecoded: true};
 
 const auth = require('..')('SECRET', userGetter, {
     session: {
         filter: (user) => {
-            assert(user.pass);
-            user.sessionfilter = true;
-            return user;
+            const u = Object.assign({}, user);
+            assert(u.pass);
+            u.sessionFilter = true;
+            return u;
         }
     },
     token: {
@@ -34,7 +32,7 @@ const auth = require('..')('SECRET', userGetter, {
             assert(user.pass)
         },
         decode: (token) => token.iss[0] == 'a' ? DEFAULT_ADMIN_TOKEN_DECODED_RESPONSE : DEFAULT_USER_TOKEN_DECODED_RESPONSE,
-        iss: (user) => (user.admin ? 'a' : 'u') + '123456',
+        iss: (user) => (user.roles.includes('admin') ? 'a' : 'u') + '123456',
         exp: Math.floor(Date.now() / 1000) + (60 * 60)
     }
 });

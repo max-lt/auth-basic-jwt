@@ -1,6 +1,6 @@
 {
   "name": "auth-basic-jwt",
-  "version": "1.1.2",
+  "version": "2.0.0",
   "description": "Basic auth + jwt module for express",
   "main": "index.js",
   "scripts": {
@@ -32,7 +32,7 @@
     "coveralls": "^2.11.15",
     "express": "latest",
     "istanbul": "^0.4.5",
-    "mocha": "^3.2.0",
+    "mocha": "^5.0.0",
     "supertest": "^2.0.1"
   },
   "engines": {

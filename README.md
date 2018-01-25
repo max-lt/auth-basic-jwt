@@ -27,6 +27,8 @@ Note that the "_**userLogin**_" parameter must **match** the **expected basic au
     token: {
         filter* :   function(user) or var, // Data to put in the token.user attribute 
                        // (default is the whole user param without the pass attribute)
+                       // must return a "role" attribute in order to be compared with the
+                       // auth.hasRole(...) method.
         decode* :   function(token) or var, // Data to put in the req.user attribute 
                        // (default is the token.user data)
         exp :       function(user) or var,
@@ -37,11 +39,13 @@ Note that the "_**userLogin**_" parameter must **match** the **expected basic au
     session: {
         filter* :   function(user), // Data to put in the req.user attribute
                        // (default is the whole user param without the pass attribute)
+                       // must return a "role" attribute in order to be compared with the
+                       // auth.hasRole(...) method.
     },
     password: {
         compare*:   function(user, pass):boolean // function used to compare 
                        // the user password (user.pass) and the provided credential (pass). 
-                       // Default is (user.pass == pass)
+                       // Default is "user.pass == pass"
     },
     unauthorized: function(error, req, res, next), // method )
     login: {
@@ -64,12 +68,13 @@ your-auth-config.js
 function userGetter(userLogin) {
     return {
         email: userLogin,
-        pass: 'password'
+        pass: 'password',
+        roles: ['user']
     }
 }
 // OR //
 function userGetter(userLogin) {
-    return Promise.resolve({email: userLogin, pass: 'password'});
+    return Promise.resolve({email: userLogin, pass: 'password', roles: ['user']});
 }
 
 const app = require('express')();
@@ -86,7 +91,7 @@ express entry point
 ```js
 /// require ... ///
 const auth = require('./your-auth-config');
-app.use(auth.core);
+app.use(auth.default);
 
 const routeA = require('./routes/routeA');
 const routeB = require('./routes/routeB');
@@ -97,9 +102,14 @@ app.get('/userinfo', auth.user, yourFunction);
 app.use('/a', routeA);
 app.use('/b', auth.user, routeB);
 app.use('/c', auth.admin, routeC);
+app.use('/d', auth.hasRole('custom'), routeD);
 
 app.use(auth.unauthorized); // catch errors that are instance of AuthenticationError
+
 ```
+
+Note that `auth.user` and `auth.admin` are just aliases of `auth.hasRole('user')` and `auth.hasRole('admin')`.
+
 RouteA.js
 ```js
 /// require ... ///
